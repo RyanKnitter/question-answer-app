@@ -1,11 +1,21 @@
 import requests
 import streamlit as st
 from streamlit_lottie import st_lottie
-from pdf_functions import *
-from transformer_functions import *
 import pdfplumber
+from transformers import pipeline
+
+model_response = ""
+doc = ""
 
 # FUNCTIONS
+def question_answer(question, context, model_name = "microsoft/xdoc-base-squad2.0"):
+    model = pipeline('question-answering', model=model_name, tokenizer=model_name)
+    QA_input = {
+        'question': question,
+        'context': context
+    }
+    return model(QA_input).get('answer')
+
 def load_lottieurl(url):
     r = requests.get(url)
     if r.status_code != 200:
@@ -21,9 +31,6 @@ def change_session_state():
 
 # ASSETS
 lottie_robot = load_lottieurl("https://assets3.lottiefiles.com/packages/lf20_eZGSBU1hRJ.json")
-
-# CONSTANTS
-png_dir = "C:/Users/C082494/PycharmProjects/EHR_v1_000/99 Supporting Files - Dont Touch/02 PDF pngs/"
 
 # PAGE INFO
 st.set_page_config(page_title="EHR Capture", page_icon=":mechanical_arm:", layout="wide")
@@ -48,12 +55,10 @@ with st.container():
 with st.container():
     row2_col1, row2_col2, row2_col3 = st.columns((1, 1, 1))
     row3_col1, row3_col2, row3_col3 = st.columns((1, 1, 1))
-    row4_col1, row4_col2, row4_col3 = st.columns((5, 1, 5))
-    row5_col1, row5_col2, row5_col3 = st.columns((1, 1, 1))
+    row4_col1, row4_col2, row4_col3 = st.columns((1, 1, 1))
 
     with row2_col2:
         uploaded_file = row2_col2.file_uploader("", on_change=change_session_state, type="pdf")
-        doc = ""
         if uploaded_file is not None:
             pdf = pdfplumber.open(uploaded_file)
             pages = pdf.pages
@@ -61,21 +66,15 @@ with st.container():
             for p in pdf.pages:
                 doc += p.extract_text()
 
-    st.write("##")
     with row3_col2:
         st.subheader("")
         st.subheader("Human Input")
         question = st.text_input(label="", value="Enter your question")
 
-    with row4_col2:
-        operate_button = st.button('Ask')
-        model_response = ""
-        if operate_button:
+        if question != 'Enter your question':
             model_response = question_answer(question=question, context=doc, model_name = "microsoft/xdoc-base-squad2.0")
 
-    with row5_col2:
-        # modelresponse = model_function(input)
-        # st.text_area(label="", value=doc, height=100)
+    with row4_col2:
         st.divider()
         st.subheader("AI Output")
         st.write(model_response)
